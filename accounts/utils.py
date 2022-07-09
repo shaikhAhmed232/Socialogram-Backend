@@ -1,10 +1,10 @@
-from datetime import datetime
+from django.utils import timezone
 import os
 from rest_framework_simplejwt.tokens import RefreshToken
 
 def upload_img_url(instance, filename):
-    ddd = datetime.now
-    path = os.path.join("user-pic", instance.username, ddd.date(), filename)
+    date = timezone.now()
+    path = os.path.join("user-pic", instance.username, str(date.year), str(date.month), str(date.day), filename)
     return path
 
 def get_token(user):

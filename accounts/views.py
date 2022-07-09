@@ -1,16 +1,22 @@
+from xml.dom import NotFoundErr
 from django.shortcuts import render
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
+from accounts.models import User
+from django.shortcuts import get_object_or_404
 
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializer import UserSerializer
+from .serializer import UserSerializer, ChangeUserPasswordSerializer
 from .utils import get_token, convert_to_seconds
 from .permissions import IsUser
+from accounts import serializer
 
 # Create your views here.
 
@@ -50,7 +56,6 @@ class LoginView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class GetCurrentUser(APIView):
-    http_method_names = ["get", "put"]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -59,12 +64,61 @@ class GetCurrentUser(APIView):
         return Response(data = serializer.data , status=status.HTTP_200_OK)
 
     def put(self, request):
-        serializer = UserSerializer(request.user, data=request.data)
+        user = request.user
+        data = request.data
+        serializer = UserSerializer(instance=user, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UpdateProfilePic(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def put(self, request):
+        user = request.user
+        data = request.data
+        serializer = UserSerializer(instance=user, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ChangeUserPassword(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        data = request.data
+        serializer = ChangeUserPasswordSerializer(instance=user, data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'success': "password change successfully"}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserListView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        user_list = User.objects.all().exclude(username=user.username)
+        serializer = UserSerializer(user_list, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+    
+class UserProfileDetailView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    lookup_field = 'username'
+
+
+
+
+
+
+
 
 
 
