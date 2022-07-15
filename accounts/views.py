@@ -13,10 +13,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializer import UserSerializer, ChangeUserPasswordSerializer
+from .serializer import UserSerializer, ChangeUserPasswordSerializer, FollowingSerializer, FollowerSerializer
 from .utils import get_token, convert_to_seconds
 from .permissions import IsUser
-from accounts import serializer
 
 # Create your views here.
 
@@ -112,6 +111,33 @@ class UserProfileDetailView(RetrieveAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
+
+    # def get_queryset(self, username):
+    #     try:
+    #         return User.objects.get(username=username)
+    #     except NotFoundErr:
+    #         return Response(status=status.HTTP_404_NOT_FOUND)
+
+    # def get(self, request, username):
+    #     user = self.get_queryset(username)
+    #     followers = user.followers.all()
+    #     following = user.following.all()
+    #     print(followers, following)
+    #     serializer = self.serializer_class(user)
+    #     followers_serializer = FollowingSerializer(followers, many=True)
+    #     following_serializer = FollowerSerializer(following, many=True)
+        
+    #     return Response({
+    #         "user": serializer.data,
+    #         "followers": followers_serializer.data,
+    #         "following": following_serializer.data,
+    #     }, status=status.HTTP_200_OK)
+
+
+        
+        
+        
+
 
 
 

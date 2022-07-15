@@ -1,20 +1,39 @@
+from dataclasses import fields
 from django.contrib.auth.hashers import make_password
 from django.forms import ValidationError
 from rest_framework import serializers
 
-from .models import User
+from .models import User, Contact
+
+class FollowingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Contact
+        fields=('id', 'following',)
+
+class FollowerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Contact
+        fields=('id', 'follower',)
 
 class UserSerializer(serializers.ModelSerializer):
     profile_pic = serializers.ImageField(required=False, allow_empty_file=True)
+    following = serializers.SerializerMethodField()
+    followers = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "email", "username", "password", "full_name", "profile_pic"]
+        fields = ["id", "email", "username", "password", "full_name", "profile_pic", "followers", "following"]
         extra_kwargs = {"password": {"write_only": True}, "url": {"lookup_field": 'username'}}
 
     def create(self, validated_data):
         validated_data["password"] = make_password(validated_data["password"])
         return super().create(validated_data)
 
+    def get_followers(self, obj):
+        return FollowerSerializer(obj.followers.all(), many=True).data
+
+    def get_following(self, obj):
+        return FollowingSerializer(obj.following.all(), many=True).data
 # class UpdateUserSerializer(serializers.ModelSerializer):
 #     profile_pic = serializers.ImageField(required=False, allow_empty_file=True)
 #     class Meta:
@@ -49,5 +68,15 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
         instance.set_password(validated_data["new_password"])
         instance.save()
         return instance
+
+# class ContactSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model=Contact
+#         fields = "__all__"
+
+
+
+
+    
 
 
