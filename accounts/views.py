@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
-from accounts.models import User
+from accounts.models import User, Contact
 from django.shortcuts import get_object_or_404
 
 from rest_framework import status
@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializer import UserSerializer, ChangeUserPasswordSerializer, FollowingSerializer, FollowerSerializer
+from .serializer import UserSerializer, ChangeUserPasswordSerializer, FollowingSerializer, FollowerSerializer, ContactSerializer
 from .utils import get_token, convert_to_seconds
 from .permissions import IsUser
 
@@ -133,8 +133,68 @@ class UserProfileDetailView(RetrieveAPIView):
     #         "following": following_serializer.data,
     #     }, status=status.HTTP_200_OK)
 
+class GetUserFollower(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        user = User.objects.get(username=username)
+        followers = user.followers.all()
+        follower_user = []
+        for follower in followers:
+            follower_user.append(follower.user_id)
+        serializer = UserSerializer(follower_user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GetUserFollowing(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        user = User.objects.get(username=username)
+        following = user.following.all()
+        following_user = []
+        for each in following:
+            following_user.append(each.following_user_id)
+        serializer = UserSerializer(following_user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class FollowView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        follower = request.user
+        following_id = request.data["following"]
+        following_user = User.objects.get(id=following_id["id"])
+
+        if not following_user.is_active:
+            return Response({"msg": f"{following_user} is blocked you can't follow this user."})
+        if follower.following.filter(following_user_id=following_user.id).exists():
+            return Response({"msg": "You already following {0}".format(following_user)},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = ContactSerializer(data={"user_id": follower.id, "following_user_id": following_user.id})
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"msg": "{0} start following {1}".format(follower, following_user)}, status=status.HTTP_200_OK)
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        print(request.data)
+        un_follower = request.user
+        un_following = request.data["un_following"]
+        un_following_user = User.objects.get(id = un_following["id"])
+
+        try:
+            contact = Contact.objects.get(user_id=un_follower.id, following_user_id=un_following_user.id)
+        except Contact.DoesNotExist:
+            return Response({"msg": f"you don't follow {un_following_user} so you can't unfollow this user."}, status=status.HTTP_404_NOT_FOUND)
+        contact.delete()
+        return Response({"msg": f"{un_follower} unfollowed {un_following_user}"}, status=status.HTTP_200_OK)
+
+
 
         
+        
+
+            
         
         
 
