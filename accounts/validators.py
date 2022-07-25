@@ -13,7 +13,6 @@ def email_validator(email):
     if result is None:
         raise ValidationError('Invalid Email')
 
-
 def username_validator(username):
     express = r"[@._]*[A-Za-z]+[0-9.@-_]*"
     regex = re.compile(express)

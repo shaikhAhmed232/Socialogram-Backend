@@ -1,10 +1,5 @@
-from xml.dom import NotFoundErr
 from django.shortcuts import render
 from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import AnonymousUser
-from django.conf import settings
-from accounts.models import User, Contact
-from django.shortcuts import get_object_or_404
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -13,9 +8,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .serializer import UserSerializer, ChangeUserPasswordSerializer, FollowingSerializer, FollowerSerializer, ContactSerializer
+from accounts.models import User, Contact
+from .serializer import UserSerializer, ChangeUserPasswordSerializer, ContactSerializer
 from .utils import get_token, convert_to_seconds
-from .permissions import IsUser
 
 # Create your views here.
 
@@ -36,9 +31,10 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         if user is not None:
             if user.is_active:
+                # generate token.
                 tokens = get_token(user)
-                access_time_limit = convert_to_seconds(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"])
-                refresh_time_limit = convert_to_seconds(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'])
+                # access_time_limit = convert_to_seconds(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"])
+                # refresh_time_limit = convert_to_seconds(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'])
 
                 return Response(data={
                     "access": tokens["access"],
@@ -54,14 +50,17 @@ class LoginView(APIView):
                 "message": "Invalid username or password",
             }, status=status.HTTP_400_BAD_REQUEST)
 
+# view for getting current login user.
 class GetCurrentUser(APIView):
     permission_classes = [IsAuthenticated]
 
+    # getting current user
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
         return Response(data = serializer.data , status=status.HTTP_200_OK)
 
+    # changing fields value of current user.
     def put(self, request):
         user = request.user
         data = request.data
@@ -71,6 +70,7 @@ class GetCurrentUser(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# view for Changing profile picture of current user.
 class UpdateProfilePic(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -105,7 +105,8 @@ class UserListView(APIView):
         user_list = User.objects.all().exclude(username=user.username)
         serializer = UserSerializer(user_list, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
-    
+
+# view for getting any user's details.
 class UserProfileDetailView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
@@ -133,6 +134,7 @@ class UserProfileDetailView(RetrieveAPIView):
     #         "following": following_serializer.data,
     #     }, status=status.HTTP_200_OK)
 
+# view for getting followers list in form of user object. 
 class GetUserFollower(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -145,6 +147,7 @@ class GetUserFollower(APIView):
         serializer = UserSerializer(follower_user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+# view for getting following list in form of user object.
 class GetUserFollowing(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -157,16 +160,23 @@ class GetUserFollowing(APIView):
         serializer = UserSerializer(following_user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+# view for follow and unfollow requests.
 class FollowView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # create contact instance (follow request).
     def post(self, request):
+        # user who makes follow request.
         follower = request.user
+        # user id who is being followed.
         following_id = request.data["following"]
+        # getting followed user from db.
         following_user = User.objects.get(id=following_id["id"])
 
+        # check for if following_user is active or not?
         if not following_user.is_active:
-            return Response({"msg": f"{following_user} is blocked you can't follow this user."})
+            return Response({"msg": f"{following_user} is blocked you can't follow this user."}, status=status.HTTP_400_BAD_REQUEST)
+        # check for if following_user already getting followed by follower?
         if follower.following.filter(following_user_id=following_user.id).exists():
             return Response({"msg": "You already following {0}".format(following_user)},status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -176,12 +186,16 @@ class FollowView(APIView):
                 return Response({"msg": "{0} start following {1}".format(follower, following_user)}, status=status.HTTP_200_OK)
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # delete Contact instance (unfollow).
     def delete(self, request):
-        print(request.data)
+        # user who is making unfollow request.
         un_follower = request.user
+        # user id who is getting unfollowed by un_follower.
         un_following = request.data["un_following"]
+        # getting un_following user from db.
         un_following_user = User.objects.get(id = un_following["id"])
 
+        # checking for contact in which un_follower following un_following_user exists or not?
         try:
             contact = Contact.objects.get(user_id=un_follower.id, following_user_id=un_following_user.id)
         except Contact.DoesNotExist:

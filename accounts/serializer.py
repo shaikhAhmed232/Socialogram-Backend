@@ -5,16 +5,19 @@ from rest_framework import serializers
 
 from .models import User, Contact
 
+# Serializer for serializing contact model's following_user_id field.
 class FollowingSerializer(serializers.ModelSerializer):
     class Meta:
         model=Contact
         fields=('id', 'following_user_id',)
 
+# Serializer for serializing Contact model's user_id field.
 class FollowerSerializer(serializers.ModelSerializer):
     class Meta:
         model=Contact
         fields=('id', 'user_id',)
 
+# Serializer for serializing user Model.
 class UserSerializer(serializers.ModelSerializer):
     profile_pic = serializers.ImageField(required=False, allow_empty_file=True)
     following = serializers.SerializerMethodField()
@@ -29,10 +32,12 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data["password"] = make_password(validated_data["password"])
         return super().create(validated_data)
 
+    # list of users who is followed by current user.
     def get_following(self, obj):
         following = obj.following.all()
         return FollowingSerializer(following, many=True).data
 
+    # list of users who is following current user.
     def get_followers(self, obj):
         return FollowerSerializer(obj.followers.all(), many=True).data
 # class UpdateUserSerializer(serializers.ModelSerializer):
@@ -41,6 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
 #         model = User
 #         fields = ("email", "username", "full_name", "profile_pic")
 
+# Serializer for changing current user's password
 class ChangeUserPasswordSerializer(serializers.ModelSerializer):
     old_password = serializers.CharField(write_only=True, required=True)
     new_password = serializers.CharField(write_only=True, required=True)
@@ -70,6 +76,7 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+# Contact model serializer
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model=Contact
