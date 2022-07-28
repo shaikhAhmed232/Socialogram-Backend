@@ -25,3 +25,14 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.img} posted by {self.owner} at {self.posted_at}"
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
+    comment = models.CharField(max_length=300)
+    comment_by = models.OneToOneField(User, on_delete=models.RESTRICT, related_name="user_comments")
+
+    def __str__(self):
+        return f"{self.comment_by.username} commented {self.comment} on {self.post.img}"
+
+    def get_comment_user(self):
+        return self.comment_by

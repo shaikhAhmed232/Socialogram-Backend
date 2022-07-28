@@ -2,7 +2,7 @@ from dataclasses import field
 from django.forms import ValidationError
 from rest_framework import serializers
 
-from .models import Post
+from .models import Post, Comment
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,4 +18,10 @@ class PostSerializer(serializers.ModelSerializer):
     # def save(self):
     #     user = self.context["user"]
     #     self.validated_data["owner"] = user
-    #     return super().save()
+    #     return super().save()cls
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Comment
+        fields = "__all__"
+    
