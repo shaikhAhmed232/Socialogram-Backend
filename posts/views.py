@@ -26,10 +26,9 @@ class GetPostList(APIView):
         following = [following.following_user_id for following in following]
         # copying all into one list of user objects
         users = [*followers, *following]
-        all_posts = Post.objects.all()
+        all_posts = Post.objects.all().select_related('owner').prefetch_related('comments', 'comments__comment_by')
         # filtering post by post owner since wanted show post of users who have follower or following relation with current login user.
         filtered_posts = filter(lambda post: post if post.owner in users else None, all_posts)
-
         serializer = PostSerializer(filtered_posts, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
@@ -52,13 +51,9 @@ class GetSinglePost(APIView):
     serializer_class = PostSerializer
     
     def get(self, request, pk):
-        post = Post.objects.get(pk=pk)
-        owner = post.owner
-        comments = post.comments.all()
+        post = Post.objects.select_related('owner').prefetch_related('comments', 'comments__comment_by').get(pk=pk)
         post_serializer = PostSerializer(post)
-        user_serializer = UserSerializer(owner)
-        comments_serializer = CommentSerializer(comments, many=True)
-        return Response(data={"post": post_serializer.data, "owner": user_serializer.data, "comments": comments_serializer.data}, status=status.HTTP_200_OK)
+        return Response(data=post_serializer.data, status=status.HTTP_200_OK)
 
 class DeletePost(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsPostOwner]
@@ -70,9 +65,28 @@ class UserPosts(APIView):
 
     def get(self, request, username, *args):
         user = User.objects.get(username=username)
-        user_posts = Post.current_user_posts.get_current_user_posts(user=user)
+        user_posts = Post.current_user_posts.get_current_user_posts(user=user).prefetch_related('comments', 'comments__comment_by')
         serializer = PostSerializer(user_posts, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK) 
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+class AddComment(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+        print(user)
+        data = request.data
+        print(data)
+        data["post"] = pk
+        data["comment_by"] = user
+        print(data)
+        serializer = CommentSerializer(data=data)
+        if serializer.is_valid():
+            print(repr(serializer))
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
