@@ -48,7 +48,7 @@ INTERNAL_APPS = [
     'django.contrib.staticfiles',
 ]
 
-LOCAL_APPS = ['accounts.apps.AccountsConfig','posts.apps.PostsConfig']
+LOCAL_APPS = ['accounts.apps.AccountsConfig','posts.apps.PostsConfig', 'notifications.apps.NotificationsConfig']
 
 INSTALLED_APPS = INTERNAL_APPS + EXTERNAL_APPS + LOCAL_APPS
 

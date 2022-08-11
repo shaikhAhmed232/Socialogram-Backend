@@ -8,4 +8,5 @@ urlpatterns = [
     path("<int:pk>/", GetSinglePost.as_view(), name="get_single_post"),
     path("<str:username>/", UserPosts.as_view(), name='current_user_posts'),
     path('<int:pk>/add-comment/', AddComment.as_view(), name="add_comment"),
+    path('<int:pk>/add-like/', AddLike.as_view(), name="add_like"),
 ]

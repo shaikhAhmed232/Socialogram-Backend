@@ -26,6 +26,10 @@ class Post(models.Model):
     def __str__(self):
         return f"{self.img} posted by {self.owner} at {self.posted_at}"
 
+class SavedPost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE)
+
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments", default=3)
     comment = models.CharField(max_length=300)
@@ -36,3 +40,16 @@ class Comment(models.Model):
 
     def get_comment_user(self):
         return self.comment_by
+
+class Like(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
+    liked_by = models.ForeignKey(User, on_delete=models.RESTRICT, related_name = "liked_posts")
+
+    def __str__(self):
+        return "{0} liked by {1}".format(self.post.img, self.liked_by.username)
+
+
+
+
+
+

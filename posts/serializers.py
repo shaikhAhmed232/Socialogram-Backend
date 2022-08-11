@@ -2,21 +2,32 @@ from dataclasses import field
 from django.forms import ValidationError
 from rest_framework import serializers
 
-from .models import Post, Comment
+from .models import Post, Comment, Like
 from accounts.serializer import UserSerializer
 
 class CommentSerializer(serializers.ModelSerializer):
-    comment_by = UserSerializer()
+    comment_by = UserSerializer(read_only=True)
     class Meta:
         model=Comment
-        fields = ('post', 'comment', 'comment_by')
+        fields = ("id", 'post', 'comment', 'comment_by')
+
+class LikeSerializer(serializers.ModelSerializer):
+    liked_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Like
+        fields = ("id","post", "liked_by")
+        extra_kwargs = {
+            "post": {"read_only": True}
+        }
 
 class PostSerializer(serializers.ModelSerializer):
-    owner = UserSerializer()
+    owner = UserSerializer(read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    likes = LikeSerializer(many=True, read_only=True)
     class Meta:
         model= Post
-        fields = ("id", "img", "posted_at", "caption", "owner", "comments")
+        fields = ("id", "img", "posted_at", "caption", "owner", "comments", "likes")
 
     def validate(self, attrs):
         img = attrs.get("img")
