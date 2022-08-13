@@ -37,6 +37,7 @@ EXTERNAL_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'debug_toolbar',
 ]
 
 INTERNAL_APPS = [
@@ -48,10 +49,11 @@ INTERNAL_APPS = [
     'django.contrib.staticfiles',
 ]
 
-LOCAL_APPS = ['accounts.apps.AccountsConfig',]
+LOCAL_APPS = ['accounts.apps.AccountsConfig','posts.apps.PostsConfig', 'notifications.apps.NotificationsConfig']
 
 INSTALLED_APPS = INTERNAL_APPS + EXTERNAL_APPS + LOCAL_APPS
 
+# registering our custom user model
 AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
@@ -63,8 +65,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
+# settings for rest framework.
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
@@ -191,3 +195,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
